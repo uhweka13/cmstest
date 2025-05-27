@@ -5,6 +5,7 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -18,14 +19,18 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Card
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
@@ -41,8 +46,13 @@ import com.beans.cmstest.ui.viewmodel.BeansViewModel
 @Composable
 fun ListScreen(viewModel: BeansViewModel) {
     val beans by viewModel.beans.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
     val screenWidth = getScreenWidth()
     val listState = rememberLazyListState()
+
+    LaunchedEffect(isLoading) {
+        Log.d("ListScreen", "Loading state: $isLoading")
+    }
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -52,56 +62,73 @@ fun ListScreen(viewModel: BeansViewModel) {
                 windowInsets = TopAppBarDefaults.windowInsets
             )
         }
-    ) { innerPadding -> LazyColumn(
-        state = listState,
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(innerPadding)
-    ) {
-        items(beans, key = {bean->bean.beanId}) { bean ->
-            Card(
-                modifier = Modifier.size(width = screenWidth.dp, height = 100.dp)
-                    .padding(bottom = 7.dp)
-                    .clickable {
-                        Log.d("ListScreen", "Bean clicked: ID=${bean.beanId}")
-                        viewModel.onBeanClicked(bean.beanId)
-                    }
+    ) { innerPadding ->
+        if (isLoading) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding),
+                contentAlignment = Alignment.Center
             ) {
-                Row {
-//                    Image(
-//                        painter = rememberAsyncImagePainter(
-//                            model = "${bean.imageUrl}",
-////                            placeholder = painterResource(R.drawable.ic_launcher_foreground),
-//                            error = painterResource(R.drawable.ic_launcher_background)
-//                        ),
-//                        contentDescription = "Example Image",
-//                        modifier = Modifier
-//                            .width(100.dp) // Set desired width
-//                            .height(100.dp) // Set desired height
-//                    )
-                    AsyncImage(
-                        model = ImageRequest.Builder(LocalContext.current)
-                            .data(bean.imageUrl)
-                            .crossfade(true)
-                            .build(),
-                        contentDescription = bean.flavorName,
+                CircularProgressIndicator(
+                    modifier = Modifier.size(48.dp),
+                    color = MaterialTheme.colorScheme.background
+                )
+            }
+        } else {
+            LazyColumn(
+                state = listState,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+            ) {
+                items(beans, key = { bean -> bean.beanId }) { bean ->
+                    Card(
                         modifier = Modifier
-                            .width(100.dp)
-                            .height(100.dp)
-                    )
-                    Column(
-                        modifier = Modifier.height(100.dp),
-                        verticalArrangement = Arrangement.Center,
+                            .size(width = screenWidth.dp, height = 100.dp)
+                            .padding(bottom = 7.dp)
+                            .clickable {
+//                                Log.d("ListScreen", "Bean clicked: ID=${bean.beanId}")
+                                viewModel.onBeanClicked(bean.beanId)
+                            }
+                    ) {
+                        Row {
+                            //                    Image(
+                            //                        painter = rememberAsyncImagePainter(
+                            //                            model = "${bean.imageUrl}",
+                            ////                            placeholder = painterResource(R.drawable.ic_launcher_foreground),
+                            //                            error = painterResource(R.drawable.ic_launcher_background)
+                            //                        ),
+                            //                        contentDescription = "Example Image",
+                            //                        modifier = Modifier
+                            //                            .width(100.dp) // Set desired width
+                            //                            .height(100.dp) // Set desired height
+                            //                    )
+                            AsyncImage(
+                                model = ImageRequest.Builder(LocalContext.current)
+                                    .data(bean.imageUrl)
+                                    .crossfade(true)
+                                    .build(),
+                                contentDescription = bean.flavorName,
+                                modifier = Modifier
+                                    .width(100.dp)
+                                    .height(100.dp)
 
-                        ){
-                        Text("${bean.description} ${bean.beanId}", maxLines = 2)
-//                        Text("text 3")
-//                        Text("text 4")
+                            )
+                            Column(
+                                modifier = Modifier.height(100.dp),
+                                verticalArrangement = Arrangement.Center,
+
+                                ) {
+                                Text("${bean.description}", maxLines = 2)
+                                //                        Text("text 3")
+                                //                        Text("text 4")
+                            }
+                        }
                     }
                 }
             }
         }
-    }
     }
 
 }
@@ -122,7 +149,9 @@ fun ItemListScreen(innerPadding: PaddingValues) {
     ) {
         items(itemsList, key = {item->item}) { item ->
             Card(
-                modifier = Modifier.size(width = screenWidth.dp, height = 100.dp).padding(bottom = 7.dp)
+                modifier = Modifier
+                    .size(width = screenWidth.dp, height = 100.dp)
+                    .padding(bottom = 7.dp)
             ) {
                 Row {
                     Image(

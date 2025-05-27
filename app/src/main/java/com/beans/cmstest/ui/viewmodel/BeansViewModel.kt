@@ -14,12 +14,17 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 class BeansViewModel(private val repository: BeanRepository) : ViewModel() {
+
+    private val _isLoading = MutableStateFlow(true) // Start as loading
+    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
+
     val beans: StateFlow<List<BeansEntity>> = repository.beans
         .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
         .also { flow ->
             viewModelScope.launch {
                 flow.collect { beans ->
                     Log.d("BeanViewModel", "Beans updated: ${beans.size} items")
+                    _isLoading.value = false
                 }
             }
         }
